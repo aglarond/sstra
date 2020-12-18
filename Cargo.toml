@@ -1,0 +1,17 @@
+[package]
+name = "sstra"
+version = "0.1.0"
+authors = ["Dimitri Aivaliotis <aglarond@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+chrono = "0.4"
+clap = {"version" = "2", features = ["yaml"]}
+yahoo_finance_api = {"version" = "1.0", features = ["blocking"]}
+
+[profile.release]
+opt-level = 3
+codegen-units = 1
+debug = 2

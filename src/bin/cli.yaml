@@ -1,0 +1,27 @@
+name: sstra
+version: 0.1.0
+about: Calculates stock performance indicators.
+args:
+    - debug:
+        help: Turn on debug logging.
+        long: debug
+        short: d
+    - from:
+        help: The start date from which to calculate the period.
+        long: from
+        required: true
+        short: f
+        takes_value: true
+    - no-headers:
+        help: Don't print the headers.
+        long: no-headers
+    - relative:
+        help: Display the percent difference in stock price relative to the S&P 500 benchmark.
+        long: relative
+    - stocks:
+        help: The symbols of the stocks to query.
+        long: stocks
+        min_values: 1
+        required: true
+        takes_value: true
+        use_delimiter: true
