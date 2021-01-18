@@ -1,5 +1,5 @@
 name: sstra
-version: 0.1.0
+version: 0.2.0
 about: Calculates stock performance indicators.
 args:
     - debug:

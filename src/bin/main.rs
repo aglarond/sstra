@@ -7,7 +7,8 @@ use sstra::*;
 
 static MOV_AVG_NUM_DAYS: i32 = 30;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let yaml = load_yaml!("cli.yaml");
     let matches = App::from(yaml).get_matches();
     let now = Utc::now().format("%Y-%m-%d").to_string();
@@ -47,8 +48,8 @@ fn main() {
     }
     for stock in stocks {
         let symbol = stock.to_uppercase();
-        let closing_prices = get_closing_prices(&symbol, &period).unwrap();
-        let prices = price_diff(&closing_prices).unwrap();
+        let closing_prices = get_closing_prices(&symbol, &period).await.unwrap();
+        let prices = price_diff(&closing_prices).await.unwrap();
         let price_difference: f64;
         if matches.is_present("relative") {
             price_difference = prices.0;
@@ -60,7 +61,7 @@ fn main() {
             StockInfo::new(
                 symbol,
                 from.to_string(),
-                closing_prices,
+                closing_prices.to_vec(),
                 price_difference,
                 MOV_AVG_NUM_DAYS
             )

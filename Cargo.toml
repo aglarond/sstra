@@ -1,6 +1,6 @@
 [package]
 name = "sstra"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Dimitri Aivaliotis <aglarond@gmail.com>"]
 edition = "2018"
 
@@ -9,7 +9,11 @@ edition = "2018"
 [dependencies]
 chrono = "0.4"
 clap = {"version" = "2", features = ["yaml"]}
-yahoo_finance_api = {"version" = "1.0", features = ["blocking"]}
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+yahoo_finance_api = {"version" = "1.0"}
+
+[dev-dependencies]
+tokio-test = "*"
 
 [profile.release]
 opt-level = 3
