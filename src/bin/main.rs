@@ -1,5 +1,6 @@
 use std::process;
 
+use actix::Actor;
 use chrono::Utc;
 use clap::{load_yaml, App};
 
@@ -7,7 +8,7 @@ use sstra::*;
 
 static MOV_AVG_NUM_DAYS: i32 = 30;
 
-#[tokio::main]
+#[actix_rt::main]
 async fn main() {
     let yaml = load_yaml!("cli.yaml");
     let matches = App::from(yaml).get_matches();
@@ -46,6 +47,8 @@ async fn main() {
             MOV_AVG_NUM_DAYS
         );
     }
+
+    let addr = StockPriceFetcher.start();
     for stock in stocks {
         let symbol = stock.to_uppercase();
         let closing_prices = get_closing_prices(&symbol, &period).await.unwrap();
@@ -56,8 +59,7 @@ async fn main() {
         } else {
             price_difference = prices.1;
         }
-        println!(
-            "{}",
+        let result = addr.send(
             StockInfo::new(
                 symbol,
                 from.to_string(),
@@ -65,6 +67,10 @@ async fn main() {
                 price_difference,
                 MOV_AVG_NUM_DAYS
             )
-        )
+        ).await;
+        match result {
+            Ok(res) => println!("{}", res.unwrap()),
+            Err(err) => eprintln!("{}", err),
+        }
     }
 }

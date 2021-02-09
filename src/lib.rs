@@ -2,10 +2,27 @@ use std::f64;
 use std::fmt;
 use std::process;
 
+use actix::prelude::*;
 use chrono::format::ParseError;
 use chrono::NaiveDate;
 use yahoo_finance_api as yahoo;
 
+pub struct StockPriceFetcher;
+
+impl Actor for StockPriceFetcher {
+    type Context = Context<Self>;
+}
+
+impl Handler<StockInfo> for StockPriceFetcher {
+    type Result = Result<StockInfo, std::io::Error>;
+
+    fn handle(&mut self, msg: StockInfo, _ctx: &mut Context<Self>) -> Self::Result {
+        Ok(msg)
+    }
+}
+
+#[derive(Message)]
+#[rtype(result = "Result<Self, std::io::Error>")]
 pub struct StockInfo {
     pub symbol: String,
     pub period_start: String,
