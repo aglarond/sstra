@@ -79,7 +79,9 @@ impl fmt::Display for StockInfo {
 // conditional compilation for testing get_benchmark()
 #[cfg(not(test))]
 async fn get_benchmark(index: &str, period: usize) -> Option<f64> {
-    let benchmark = get_closing_prices(index, format!("{}d", period).as_str()).await.unwrap();
+    let benchmark = get_closing_prices(index, format!("{}d", period).as_str())
+        .await
+        .unwrap();
     percent_diff(benchmark[0], benchmark[period - 1])
 }
 #[cfg(test)]
@@ -184,7 +186,10 @@ mod tests {
     #[test]
     fn calculates_price_difference() {
         let x = [1.0, 2.0, 3.0];
-        assert_eq!((199.0, 200.0), tokio_test::block_on(price_diff(&x)).unwrap());
+        assert_eq!(
+            (199.0, 200.0),
+            tokio_test::block_on(price_diff(&x)).unwrap()
+        );
     }
 
     #[test]

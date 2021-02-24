@@ -59,15 +59,15 @@ async fn main() {
         } else {
             price_difference = prices.1;
         }
-        let result = addr.send(
-            StockInfo::new(
+        let result = addr
+            .send(StockInfo::new(
                 symbol,
                 from.to_string(),
                 closing_prices.to_vec(),
                 price_difference,
-                MOV_AVG_NUM_DAYS
-            )
-        ).await;
+                MOV_AVG_NUM_DAYS,
+            ))
+            .await;
         match result {
             Ok(res) => println!("{}", res.unwrap()),
             Err(err) => eprintln!("{}", err),
