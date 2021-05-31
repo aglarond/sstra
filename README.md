@@ -13,13 +13,13 @@ The program was written as part of Manning's LiveProject
 
 See the `--help` text for descriptions of each option.
 
-Call the program with a `--from` date and a list of `--stocks` and it
+Call the program with a `--from` date and a list of `--symbols` and it
 will collect and display information about closing price movement of
 those stocks over the time period beginning at that date and ending
 today.
 
-Example for retrieving the `--relative` stock price percentage change
-since June 1, 2020 for Microsoft, Google, Apple, Uber, and IBM:
+Example for retrieving the stock price percentage change since June 1,
+2020 for Microsoft, Google, Apple, Uber, and IBM:
 
 ```
 $ cargo run --release -- --relative --from "2020-06-01" --stocks=MSFT,GOOG,AAPL,UBER,IBM

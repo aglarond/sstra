@@ -15,7 +15,7 @@ async fn main() {
     let now = Utc::now().format("%Y-%m-%d").to_string();
 
     let from: &str = matches.value_of("from").unwrap();
-    let stocks: Vec<&str> = matches.values_of("stocks").unwrap().collect();
+    let symbols: Vec<&str> = matches.values_of("symbols").unwrap().collect();
 
     if matches.is_present("debug") {
         eprintln!("Calculating the period from {} until {}...", from, now);
@@ -49,16 +49,11 @@ async fn main() {
     }
 
     let addr = StockPriceFetcher.start();
-    for stock in stocks {
+    for stock in symbols {
         let symbol = stock.to_uppercase();
         let closing_prices = get_closing_prices(&symbol, &period).await.unwrap();
         let prices = price_diff(&closing_prices).await.unwrap();
-        let price_difference: f64;
-        if matches.is_present("relative") {
-            price_difference = prices.0;
-        } else {
-            price_difference = prices.1;
-        }
+        let price_difference: f64 = prices.0;
         let result = addr
             .send(StockInfo::new(
                 symbol,

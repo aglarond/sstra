@@ -15,12 +15,9 @@ args:
     - no-headers:
         help: Don't print the headers.
         long: no-headers
-    - relative:
-        help: Display the percent difference in stock price relative to the S&P 500 benchmark.
-        long: relative
-    - stocks:
+    - symbols:
         help: The symbols of the stocks to query.
-        long: stocks
+        long: symbols
         min_values: 1
         required: true
         takes_value: true

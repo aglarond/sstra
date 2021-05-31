@@ -76,19 +76,6 @@ impl fmt::Display for StockInfo {
     }
 }
 
-// conditional compilation for testing get_benchmark()
-#[cfg(not(test))]
-async fn get_benchmark(index: &str, period: usize) -> Option<f64> {
-    let benchmark = get_closing_prices(index, format!("{}d", period).as_str())
-        .await
-        .unwrap();
-    percent_diff(benchmark[0], benchmark[period - 1])
-}
-#[cfg(test)]
-async fn get_benchmark(_: &str, _: usize) -> Option<f64> {
-    Some(1.0)
-}
-
 pub async fn get_closing_prices(symbol: &str, period: &str) -> Option<Vec<f64>> {
     let provider = yahoo::YahooConnector::new();
     let response = provider
@@ -142,17 +129,14 @@ pub fn percent_diff(first: f64, second: f64) -> Option<f64> {
 
 /// `price_diff` returns the percent difference in stock price.
 ///
-/// The first value is relative, i.e. against a benchmark.
+/// Returns a tuple of (percentage, absolute difference).
 /// The second value is absolute, i.e. against itself.
 pub async fn price_diff(series: &[f64]) -> Option<(f64, f64)> {
     let days = series.len();
-    let absolute = percent_diff(series[0], series[days - 1]).unwrap();
+    let percentage = percent_diff(series[0], series[days - 1]).unwrap();
+    let absolute = series[days - 1] - series[0];
 
-    // To calculate the relative, we need a benchmark.
-    // Y! Finance uses "^GSPC" as the symbol for the S&P 500.
-    // We only want to call this once per invocation.
-    let benchmark = get_benchmark("^GSPC", days).await.unwrap();
-    Some((absolute - benchmark, absolute))
+    Some((percentage, absolute))
 }
 
 #[cfg(test)]
@@ -186,10 +170,7 @@ mod tests {
     #[test]
     fn calculates_price_difference() {
         let x = [1.0, 2.0, 3.0];
-        assert_eq!(
-            (199.0, 200.0),
-            tokio_test::block_on(price_diff(&x)).unwrap()
-        );
+        assert_eq!((200.0, 2.0), tokio_test::block_on(price_diff(&x)).unwrap());
     }
 
     #[test]
