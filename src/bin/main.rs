@@ -14,7 +14,9 @@ async fn main() {
     let matches = App::from(yaml).get_matches();
     let now = Utc::now().format("%Y-%m-%d").to_string();
 
-    let from: &str = matches.value_of("from").unwrap();
+    let from_in: &str = matches.value_of("from").unwrap();
+    let from_split: Vec<&str> = from_in.split('T').collect();
+    let from = from_split[0];
     let symbols: Vec<&str> = matches.values_of("symbols").unwrap().collect();
 
     if matches.is_present("debug") {

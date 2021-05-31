@@ -22,7 +22,7 @@ Example for retrieving the stock price percentage change since June 1,
 2020 for Microsoft, Google, Apple, Uber, and IBM:
 
 ```
-$ cargo run --release -- --relative --from "2020-06-01" --stocks=MSFT,GOOG,AAPL,UBER,IBM
+$ cargo run --release -- --from "2020-06-01" --symbols=MSFT,GOOG,AAPL,UBER,IBM
 period start,symbol,price,change %,min,max,30d avg
 2020-06-01,MSFT,$219.42,11.63%,$134.37,$231.05,$214.85
 2020-06-01,GOOG,$1747.90,9.38%,$1056.62,$1827.99,$1774.68
