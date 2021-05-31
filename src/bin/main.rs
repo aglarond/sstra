@@ -57,13 +57,16 @@ async fn main() {
         let prices = price_diff(&closing_prices).await.unwrap();
         let price_difference: f64 = prices.0;
         let result = addr
-            .send(StockInfo::new(
-                symbol,
-                from.to_string(),
-                closing_prices.to_vec(),
-                price_difference,
-                MOV_AVG_NUM_DAYS,
-            ))
+            .send(
+                StockInfo::new(
+                    symbol,
+                    from.to_string(),
+                    closing_prices.to_vec(),
+                    price_difference,
+                    MOV_AVG_NUM_DAYS,
+                )
+                .await,
+            )
             .await;
         match result {
             Ok(res) => println!("{}", res.unwrap()),

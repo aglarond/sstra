@@ -38,7 +38,7 @@ impl StockInfo {
     ///
     /// Work is done with the parameters passed into `new' so that the
     /// struct holds only the information relevant for display.
-    pub fn new(
+    pub async fn new(
         symbol: String,
         period_start: String,
         closing_prices: Vec<f64>,
@@ -49,9 +49,10 @@ impl StockInfo {
             symbol: symbol,
             period_start: period_start,
             price_difference: price_difference,
-            min: min(&closing_prices).unwrap(),
-            max: max(&closing_prices).unwrap(),
+            min: min(&closing_prices).await.unwrap(),
+            max: max(&closing_prices).await.unwrap(),
             simple_moving_average: *n_window_sma(mov_avg_num_days as usize, &closing_prices)
+                .await
                 .unwrap()
                 .last()
                 .unwrap(),
@@ -103,16 +104,16 @@ pub fn count_days(from: &str, until: &str) -> Result<String, ParseError> {
         .to_string())
 }
 
-pub fn min(series: &[f64]) -> Option<f64> {
+pub async fn min(series: &[f64]) -> Option<f64> {
     Some(series.iter().fold(f64::INFINITY, |a, &b| a.min(b)))
 }
 
-pub fn max(series: &[f64]) -> Option<f64> {
+pub async fn max(series: &[f64]) -> Option<f64> {
     Some(series.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b)))
 }
 
 /// calculate the simple moving average of a series over a time period, n
-pub fn n_window_sma(n: usize, series: &[f64]) -> Option<Vec<f64>> {
+pub async fn n_window_sma(n: usize, series: &[f64]) -> Option<Vec<f64>> {
     let mut averages = Vec::<f64>::new();
     for subset in series.windows(n) {
         let length: f64 = subset.len() as f64;
@@ -148,7 +149,7 @@ mod tests {
         let x = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0];
         assert_eq!(
             [2.0, 3.0, 4.0, 5.0, 6.0].to_vec(),
-            n_window_sma(3, &x).unwrap()
+            tokio_test::block_on(n_window_sma(3, &x)).unwrap()
         );
     }
 
@@ -176,12 +177,12 @@ mod tests {
     #[test]
     fn gets_min() {
         let x = [1.0, 2.0, 3.0, f64::NAN];
-        assert_eq!(1.0, min(&x).unwrap());
+        assert_eq!(1.0, tokio_test::block_on(min(&x)).unwrap());
     }
 
     #[test]
     fn gets_max() {
         let x = [1.0, 2.0, 3.0, f64::NAN];
-        assert_eq!(3.0, max(&x).unwrap());
+        assert_eq!(3.0, tokio_test::block_on(max(&x)).unwrap());
     }
 }
