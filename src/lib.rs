@@ -21,6 +21,12 @@ impl Handler<StockInfo> for StockPriceFetcher {
     }
 }
 
+impl actix::Supervised for StockPriceFetcher {
+    fn restarting(&mut self, _ctx: &mut Context<StockPriceFetcher>) {
+        println!("restarting");
+    }
+}
+
 #[derive(Message)]
 #[rtype(result = "Result<Self, std::io::Error>")]
 pub struct StockInfo {

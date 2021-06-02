@@ -1,6 +1,5 @@
-use std::process;
+use std::{process, thread, time};
 
-use actix::Actor;
 use chrono::Utc;
 use clap::{load_yaml, App};
 
@@ -50,27 +49,30 @@ async fn main() {
         );
     }
 
-    let addr = StockPriceFetcher.start();
-    for stock in symbols {
-        let symbol = stock.to_uppercase();
-        let closing_prices = get_closing_prices(&symbol, &period).await.unwrap();
-        let prices = price_diff(&closing_prices).await.unwrap();
-        let price_difference: f64 = prices.0;
-        let result = addr
-            .send(
-                StockInfo::new(
-                    symbol,
-                    from.to_string(),
-                    closing_prices.to_vec(),
-                    price_difference,
-                    MOV_AVG_NUM_DAYS,
+    let addr = actix::Supervisor::start(|_| StockPriceFetcher);
+    loop {
+        for stock in &symbols {
+            let symbol = stock.to_uppercase();
+            let closing_prices = get_closing_prices(&symbol, &period).await.unwrap();
+            let prices = price_diff(&closing_prices).await.unwrap();
+            let price_difference: f64 = prices.0;
+            let result = addr
+                .send(
+                    StockInfo::new(
+                        symbol,
+                        from.to_string(),
+                        closing_prices.to_vec(),
+                        price_difference,
+                        MOV_AVG_NUM_DAYS,
+                    )
+                    .await,
                 )
-                .await,
-            )
-            .await;
-        match result {
-            Ok(res) => println!("{}", res.unwrap()),
-            Err(err) => eprintln!("{}", err),
+                .await;
+            match result {
+                Ok(res) => println!("{}", res.unwrap()),
+                Err(err) => eprintln!("{}", err),
+            }
         }
+        thread::sleep(time::Duration::from_secs(30));
     }
 }
