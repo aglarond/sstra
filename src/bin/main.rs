@@ -49,25 +49,15 @@ async fn main() {
         );
     }
 
-    let addr = actix::Supervisor::start(|_| StockPriceFetcher);
+    let fetcher = actix::Supervisor::start(|_| StockPriceFetcher);
+    let processor = actix::Supervisor::start(|_| StockPriceProcessor);
     loop {
         for stock in &symbols {
             let symbol = stock.to_uppercase();
-            let closing_prices = get_closing_prices(&symbol, &period).await.unwrap();
-            let prices = price_diff(&closing_prices).await.unwrap();
-            let price_difference: f64 = prices.0;
-            let result = addr
-                .send(
-                    StockInfo::new(
-                        symbol,
-                        from.to_string(),
-                        closing_prices.to_vec(),
-                        price_difference,
-                        MOV_AVG_NUM_DAYS,
-                    )
-                    .await,
-                )
+            let stock_prices = fetcher
+                .send(StockQuery::new(symbol, from.to_string(), MOV_AVG_NUM_DAYS).await)
                 .await;
+            let result = processor.send(stock_prices).await;
             match result {
                 Ok(res) => println!("{}", res.unwrap()),
                 Err(err) => eprintln!("{}", err),

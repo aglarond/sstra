@@ -3,28 +3,32 @@ use std::fmt;
 use std::process;
 
 use actix::prelude::*;
+use async_trait::async_trait;
 use chrono::format::ParseError;
 use chrono::NaiveDate;
 use yahoo_finance_api as yahoo;
 
 pub struct StockPriceFetcher;
+pub struct StockPriceProcessor;
 
-impl Actor for StockPriceFetcher {
-    type Context = Context<Self>;
+pub struct StockQuery<'a> {
+    pub symbol: String,
+    pub period_start: String,
+    pub mov_avg_num_days: &'a i32,
 }
 
-impl Handler<StockInfo> for StockPriceFetcher {
-    type Result = Result<StockInfo, std::io::Error>;
-
-    fn handle(&mut self, msg: StockInfo, _ctx: &mut Context<Self>) -> Self::Result {
-        Ok(msg)
-    }
+#[async_trait(?Send)]
+impl<'a> Message for StockQuery<'a> {
+    type Result = Result<StockPrices<'static>, std::io::Error>;
 }
 
-impl actix::Supervised for StockPriceFetcher {
-    fn restarting(&mut self, _ctx: &mut Context<StockPriceFetcher>) {
-        println!("restarting");
-    }
+#[derive(Message)]
+#[rtype(result = "Result<StockInfo, std::io::Error>")]
+pub struct StockPrices<'a> {
+    pub symbol: &'a String,
+    pub period_start: &'a String,
+    pub closing_prices: &'a Vec<f64>,
+    pub mov_avg_num_days: &'a i32,
 }
 
 #[derive(Message)]
@@ -39,31 +43,66 @@ pub struct StockInfo {
     pub simple_moving_average: f64,
 }
 
-impl StockInfo {
-    /// Create a new StockInfo.
-    ///
-    /// Work is done with the parameters passed into `new' so that the
-    /// struct holds only the information relevant for display.
-    pub async fn new(
-        symbol: String,
-        period_start: String,
-        closing_prices: Vec<f64>,
-        price_difference: f64,
-        mov_avg_num_days: i32,
-    ) -> StockInfo {
-        StockInfo {
-            symbol: symbol,
-            period_start: period_start,
+impl Actor for StockPriceFetcher {
+    type Context = Context<Self>;
+}
+
+impl Actor for StockPriceProcessor {
+    type Context = Context<Self>;
+}
+
+#[async_trait(?Send)]
+impl<'a> Handler<StockQuery<'a>> for StockPriceFetcher {
+    type Result = Result<StockPrices<'static>, std::io::Error>;
+
+    async fn handle(&mut self, msg: StockQuery<'static>, _ctx: &mut Self::Context) -> Self::Result {
+        let prices = get_closing_prices(&msg.symbol, &msg.period_start)
+            .await
+            .unwrap();
+        Ok(StockPrices {
+            symbol: &msg.symbol.to_string(),
+            period_start: &msg.period_start.to_string(),
+            closing_prices: &prices,
+            mov_avg_num_days: &msg.mov_avg_num_days,
+        })
+    }
+}
+
+#[async_trait(?Send)]
+impl<'a> Handler<StockPrices<'a>> for StockPriceProcessor {
+    type Result = Result<StockInfo, std::io::Error>;
+
+    async fn handle(&mut self, msg: StockPrices<'a>, _ctx: &mut Self::Context) -> Self::Result {
+        let prices = price_diff(&msg.closing_prices).await.unwrap();
+        let price_difference: f64 = prices.0;
+        let min = min(&msg.closing_prices).await.unwrap();
+        let max = max(&msg.closing_prices).await.unwrap();
+        let sma = *n_window_sma(*msg.mov_avg_num_days as usize, &msg.closing_prices)
+            .await
+            .unwrap()
+            .last()
+            .unwrap();
+        Ok(StockInfo {
+            symbol: msg.symbol.to_string(),
+            period_start: msg.period_start.to_string(),
+            closing_price: *msg.closing_prices.last().unwrap(),
             price_difference: price_difference,
-            min: min(&closing_prices).await.unwrap(),
-            max: max(&closing_prices).await.unwrap(),
-            simple_moving_average: *n_window_sma(mov_avg_num_days as usize, &closing_prices)
-                .await
-                .unwrap()
-                .last()
-                .unwrap(),
-            closing_price: *closing_prices.last().unwrap(),
-        }
+            min: min,
+            max: max,
+            simple_moving_average: sma,
+        })
+    }
+}
+
+impl actix::Supervised for StockPriceFetcher {
+    fn restarting(&mut self, _ctx: &mut Context<StockPriceFetcher>) {
+        println!("restarting");
+    }
+}
+
+impl actix::Supervised for StockPriceProcessor {
+    fn restarting(&mut self, _ctx: &mut Context<StockPriceProcessor>) {
+        println!("restarting");
     }
 }
 
@@ -83,7 +122,7 @@ impl fmt::Display for StockInfo {
     }
 }
 
-pub async fn get_closing_prices(symbol: &str, period: &str) -> Option<Vec<f64>> {
+async fn get_closing_prices(symbol: &str, period: &str) -> Option<Vec<f64>> {
     let provider = yahoo::YahooConnector::new();
     let response = provider
         .get_quote_range(symbol, "1d", period)
